@@ -1,0 +1,120 @@
+================================================================================
+EMAIL DE PRUEBA 1 - Reserva Confirmada con Desayuno
+================================================================================
+
+From: noreply@booking.com
+To: hotel@example.com
+Subject: Booking Confirmation - Reservation #4521893076
+
+Dear Hotel Manager,
+
+Your reservation has been confirmed! Here are the details:
+
+BOOKING REFERENCE: 4521893076
+Guest name: Ana Martínez García
+Room type: Doble Superior (102)
+Check-in date: 12/06/2026
+Check-out date: 15/06/2026
+Price per night: 89,00 €
+Total price: 267,00 €
+Payment status: Virtual
+Breakfast included: Yes
+Parking: No
+Special requests: Quiet room, high floor if possible
+
+The guest will arrive on 12/06/2026. Please prepare the room accordingly.
+
+Best regards,
+Booking.com
+
+
+================================================================================
+EMAIL DE PRUEBA 2 - Reserva Virtual con Parking
+================================================================================
+
+From: noreply@booking.com
+To: hotel@example.com
+Subject: Booking Confirmation - Reservation #4521893077
+
+Dear Hotel Manager,
+
+Your reservation has been confirmed! Here are the details:
+
+BOOKING REFERENCE: 4521893077
+Guest name: Carlos López Fernández
+Room type: Suite Deluxe (201)
+Check-in date: 13/06/2026
+Check-out date: 16/06/2026
+Price per night: 150,00 €
+Total price: 450,00 €
+Payment status: Virtual booking
+Breakfast included: Yes
+Parking: Yes
+Triple room: No
+Special requests: Late check-in expected around 22:00
+
+The guest will arrive on 13/06/2026. Please prepare the room accordingly.
+
+Best regards,
+Booking.com
+
+
+================================================================================
+EMAIL DE PRUEBA 3 - Reserva Sin Pagar
+================================================================================
+
+From: noreply@booking.com
+To: hotel@example.com
+Subject: Booking Confirmation - Reservation #4521893078
+
+Dear Hotel Manager,
+
+Your reservation has been confirmed! Here are the details:
+
+BOOKING REFERENCE: 4521893078
+Guest name: María González Ruiz
+Room type: Doble Estándar (103)
+Check-in date: 14/06/2026
+Check-out date: 17/06/2026
+Price per night: 59,50 €
+Total price: 178,50 €
+Payment status: Unpaid
+Breakfast included: No
+Parking: Yes
+Special requests: Crib needed for baby
+
+The guest will arrive on 14/06/2026. Please prepare the room accordingly.
+
+Best regards,
+Booking.com
+
+
+================================================================================
+EMAIL DE PRUEBA 4 - Reserva con Triple Room
+================================================================================
+
+From: noreply@booking.com
+To: hotel@example.com
+Subject: Booking Confirmation - Reservation #4521893079
+
+Dear Hotel Manager,
+
+Your reservation has been confirmed! Here are the details:
+
+BOOKING REFERENCE: 4521893079
+Guest name: Juan Rodríguez Martínez
+Room type: Triple Room (301)
+Check-in date: 15/06/2026
+Check-out date: 18/06/2026
+Price per night: 120,00 €
+Total price: 360,00 €
+Payment status: Confirmed
+Breakfast included: Yes
+Parking: Yes
+Triple room: Yes
+Special requests: Family traveling with two children
+
+The guest will arrive on 15/06/2026. Please prepare the room accordingly.
+
+Best regards,
+Booking.com
