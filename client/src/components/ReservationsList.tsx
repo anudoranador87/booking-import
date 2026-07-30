@@ -136,11 +136,26 @@ export default function ReservationsList({
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'confirmed':
-        return <Badge className="bg-accent text-accent-foreground border-none">Confirmado</Badge>;
+        return (
+          <span className="inline-flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-xs font-semibold px-2.5 py-1 rounded-full">
+            <span className="status-dot status-dot-green"></span>
+            Confirmado
+          </span>
+        );
       case 'virtual':
-        return <Badge className="bg-yellow-100 text-yellow-800 border-none">Virtual</Badge>;
+        return (
+          <span className="inline-flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 text-xs font-semibold px-2.5 py-1 rounded-full">
+            <span className="status-dot status-dot-yellow"></span>
+            Virtual
+          </span>
+        );
       case 'unpaid':
-        return <Badge className="bg-destructive/10 text-destructive border-none">Sin Pagar</Badge>;
+        return (
+          <span className="inline-flex items-center gap-1.5 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800 text-xs font-semibold px-2.5 py-1 rounded-full">
+            <span className="status-dot status-dot-red"></span>
+            Sin Pagar
+          </span>
+        );
       default:
         return null;
     }
@@ -148,10 +163,10 @@ export default function ReservationsList({
 
   const getExtrasDisplay = (res: Reservation) => {
     const extras = [];
-    if (res.breakfast) extras.push('D');
-    if (res.parking) extras.push('P');
-    if (res.triple) extras.push('S');
-    return extras.length > 0 ? extras.join(', ') : '-';
+    if (res.breakfast) extras.push('☕');
+    if (res.parking) extras.push('🚗');
+    if (res.triple) extras.push('🛏');
+    return extras.length > 0 ? extras.join(' ') : <span className="text-muted-foreground">—</span>;
   };
 
   return (
@@ -188,18 +203,18 @@ export default function ReservationsList({
 
       {/* Reservations Table */}
       {filteredReservations.length > 0 ? (
-        <div className="overflow-x-auto rounded-lg border border-border">
+        <div className="overflow-x-auto rounded-xl border border-border">
           <table className="w-full text-sm border-collapse">
             <thead>
-              <tr className="border-b border-border bg-secondary/30">
-                <th className="px-4 py-3 text-left font-semibold text-foreground">Huésped</th>
-                <th className="px-4 py-3 text-left font-semibold text-foreground">Habitación</th>
-                <th className="px-4 py-3 text-left font-semibold text-foreground">Entrada</th>
-                <th className="px-4 py-3 text-left font-semibold text-foreground">Salida</th>
-                <th className="px-4 py-3 text-center font-semibold text-foreground">Extras</th>
-                <th className="px-4 py-3 text-right font-semibold text-foreground">Total</th>
-                <th className="px-4 py-3 text-center font-semibold text-foreground">Estado</th>
-                <th className="px-4 py-3 text-center font-semibold text-foreground">Acción</th>
+              <tr className="border-b border-border bg-secondary/50">
+                <th className="px-4 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Huésped</th>
+                <th className="px-4 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Habitación</th>
+                <th className="px-4 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Entrada</th>
+                <th className="px-4 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Salida</th>
+                <th className="px-4 py-3.5 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">Extras</th>
+                <th className="px-4 py-3.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total</th>
+                <th className="px-4 py-3.5 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">Estado</th>
+                <th className="px-4 py-3.5 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">Ver</th>
               </tr>
             </thead>
             <tbody>
@@ -210,26 +225,41 @@ export default function ReservationsList({
                 return (
                   <Fragment key={res.id}>
                     <tr
-                      className={`border-b border-border hover:bg-secondary/20 transition-colors ${
-                        isExpanded ? 'bg-secondary/10' : ''
+                      className={`border-b border-border hover:bg-secondary/30 transition-all duration-150 ${
+                        isExpanded ? 'bg-primary/5' : ''
                       }`}
                     >
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-foreground">{res.guestName}</div>
-                        <div className="text-xs text-muted-foreground font-mono">{res.id}</div>
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            <span className="text-primary text-xs font-bold">{res.guestName.charAt(0)}</span>
+                          </div>
+                          <div>
+                            <div className="font-semibold text-foreground text-sm">{res.guestName}</div>
+                            <div className="text-xs text-muted-foreground font-mono">#{res.id}</div>
+                          </div>
+                        </div>
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-foreground">{res.roomNumber}</div>
-                        <div className="text-xs text-muted-foreground">{res.roomType}</div>
+                      <td className="px-4 py-3.5">
+                        <div className="inline-flex items-center gap-1.5 bg-secondary/60 rounded-lg px-2 py-1">
+                          <span className="font-bold text-foreground text-sm">{res.roomNumber}</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-0.5 ml-1">{res.roomType}</div>
                       </td>
-                      <td className="px-4 py-3 font-mono text-foreground">{res.checkIn}</td>
-                      <td className="px-4 py-3 font-mono text-foreground">{res.checkOut}</td>
-                      <td className="px-4 py-3 text-center font-mono font-semibold text-primary">
+                      <td className="px-4 py-3.5">
+                        <span className="font-mono text-sm text-foreground bg-secondary/40 rounded px-2 py-0.5">{res.checkIn}</span>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <span className="font-mono text-sm text-foreground bg-secondary/40 rounded px-2 py-0.5">{res.checkOut}</span>
+                      </td>
+                      <td className="px-4 py-3.5 text-center text-base">
                         {getExtrasDisplay(res)}
                       </td>
-                      <td className="px-4 py-3 text-right font-bold text-foreground">{res.totalPrice}</td>
-                      <td className="px-4 py-3 text-center">{getStatusBadge(res.status)}</td>
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-4 py-3.5 text-right">
+                        <span className="font-bold text-foreground text-sm">{res.totalPrice}</span>
+                      </td>
+                      <td className="px-4 py-3.5 text-center">{getStatusBadge(res.status)}</td>
+                      <td className="px-4 py-3.5 text-center">
                         <Button
                           variant="ghost"
                           size="sm"
@@ -237,11 +267,11 @@ export default function ReservationsList({
                             setExpandedId(isExpanded ? null : res.id);
                             if (isExpanded) cancelEditing();
                           }}
-                          className="h-8 w-8 p-0"
+                          className="h-8 w-8 p-0 hover:bg-primary/10 hover:text-primary rounded-lg"
                         >
                           <ChevronDown
-                            className={`h-4 w-4 transition-transform ${
-                              isExpanded ? 'rotate-180' : ''
+                            className={`h-4 w-4 transition-transform duration-200 ${
+                              isExpanded ? 'rotate-180 text-primary' : ''
                             }`}
                           />
                         </Button>

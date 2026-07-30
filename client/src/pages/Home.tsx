@@ -1,10 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -32,6 +33,15 @@ import {
   FileSpreadsheet,
   TrendingUp,
   Percent,
+  Moon,
+  Sun,
+  Hotel,
+  BarChart3,
+  Mail,
+  BedDouble,
+  Activity,
+  ArrowUpRight,
+  Zap,
 } from 'lucide-react';
 import ParserView from '@/components/ParserView';
 import ReservationsList from '@/components/ReservationsList';
@@ -50,8 +60,84 @@ import {
   CartesianGrid,
 } from 'recharts';
 import { toast } from 'sonner';
+import { useTheme } from '@/contexts/ThemeContext';
+
+// Animated counter hook
+function useCountUp(target: number, duration = 1200) {
+  const [count, setCount] = useState(0);
+  const startTime = useRef<number | null>(null);
+  const frameRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    startTime.current = null;
+    const animate = (timestamp: number) => {
+      if (!startTime.current) startTime.current = timestamp;
+      const elapsed = timestamp - startTime.current;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease out
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setCount(Math.round(eased * target));
+      if (progress < 1) {
+        frameRef.current = requestAnimationFrame(animate);
+      }
+    };
+    frameRef.current = requestAnimationFrame(animate);
+    return () => {
+      if (frameRef.current) cancelAnimationFrame(frameRef.current);
+    };
+  }, [target, duration]);
+
+  return count;
+}
+
+interface KpiCardProps {
+  label: string;
+  value: number;
+  suffix?: string;
+  prefix?: string;
+  color: 'blue' | 'green' | 'red' | 'purple';
+  icon: React.ReactNode;
+  description?: string;
+  delay?: number;
+}
+
+function KpiCard({ label, value, suffix = '', prefix = '', color, icon, description, delay = 0 }: KpiCardProps) {
+  const count = useCountUp(value, 1000 + delay);
+  const displayValue = prefix + (suffix === '€' 
+    ? count.toFixed(2).replace('.', ',') 
+    : count.toString()) + (suffix && suffix !== '€' ? suffix : suffix === '€' ? ' €' : '');
+
+  return (
+    <div
+      className={`kpi-card kpi-card-${color} shadow-glow-${color} animate-slide-up stagger-${delay / 50 + 1}`}
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      {/* Icon badge */}
+      <div className="relative z-10 mb-4 flex items-start justify-between">
+        <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3">
+          {icon}
+        </div>
+        <div className="bg-white/10 rounded-lg px-2 py-1 flex items-center gap-1">
+          <ArrowUpRight className="h-3 w-3 text-white/70" />
+          <span className="text-white/70 text-xs font-medium">Live</span>
+        </div>
+      </div>
+      {/* Value */}
+      <div className="relative z-10">
+        <p className="text-white/70 text-xs font-semibold uppercase tracking-widest mb-1">{label}</p>
+        <p className="text-white font-bold text-3xl leading-tight animate-count-up">
+          {displayValue}
+        </p>
+        {description && (
+          <p className="text-white/60 text-xs mt-1.5">{description}</p>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
+  const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [reservations, setReservations] = useState<any[]>([
     {
@@ -208,173 +294,251 @@ export default function Home() {
     setNewNotes('');
   };
 
+  const isDark = theme === 'dark';
+
+  const tabConfig = [
+    { value: 'dashboard', label: 'Dashboard', icon: <BarChart3 className="h-4 w-4" /> },
+    { value: 'parser', label: 'Parser Email', icon: <Mail className="h-4 w-4" /> },
+    { value: 'planning', label: 'Planning Visual', icon: <BedDouble className="h-4 w-4" /> },
+    { value: 'sheets', label: 'Google Sheets', icon: <FileSpreadsheet className="h-4 w-4" /> },
+  ];
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-white shadow-soft">
-        <div className="container py-6">
+    <div className="min-h-screen bg-background transition-colors duration-300">
+      {/* ===== HEADER ===== */}
+      <header className="app-header sticky top-0 z-50">
+        <div className="container py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-display text-3xl text-foreground">Booking Import</h1>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Automatiza la importación de reservas de Booking.com a Google Sheets
-              </p>
+            {/* Logo + Title */}
+            <div className="flex items-center gap-4 relative z-10">
+              <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-2.5 border border-white/20 shadow-lg">
+                <Hotel className="h-7 w-7 text-white" />
+              </div>
+              <div>
+                <h1 className="text-display text-2xl text-white leading-tight">
+                  Booking Import
+                </h1>
+                <p className="text-white/60 text-xs font-medium tracking-wide">
+                  Hotel Management · Powered by AI
+                </p>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <Button onClick={() => setIsManualOpen(true)} className="bg-primary hover:bg-primary/90 text-white font-medium">
-                <Plus className="mr-2 h-4 w-4" />
-                Nueva Reserva Manual
+
+            {/* Right controls */}
+            <div className="flex items-center gap-3 relative z-10">
+              {/* Dark mode toggle */}
+              <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl px-3 py-2">
+                <Sun className="h-4 w-4 text-white/70" />
+                <Switch
+                  id="dark-mode-toggle"
+                  checked={isDark}
+                  onCheckedChange={toggleTheme}
+                  className="data-[state=checked]:bg-white/30 data-[state=unchecked]:bg-white/20"
+                />
+                <Moon className="h-4 w-4 text-white/70" />
+              </div>
+
+              {/* Nueva Reserva button */}
+              <Button
+                onClick={() => setIsManualOpen(true)}
+                className="bg-white text-primary hover:bg-white/90 font-semibold shadow-lg border-none gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Nueva Reserva
               </Button>
             </div>
+          </div>
+
+          {/* Nav Tabs inside header */}
+          <div className="flex items-center gap-1 mt-4 relative z-10">
+            {tabConfig.map((tab) => (
+              <button
+                key={tab.value}
+                onClick={() => setActiveTab(tab.value)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                  activeTab === tab.value
+                    ? 'bg-white text-primary shadow-lg'
+                    : 'text-white/70 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            ))}
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* ===== MAIN ===== */}
       <main className="container py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-4 mb-8">
-          <Card className="p-6 shadow-soft">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total de Reservas</p>
-                <p className="mt-2 text-3xl font-bold text-foreground">{stats.totalReservations}</p>
-              </div>
-              <Users className="h-8 w-8 text-primary/20" />
-            </div>
-          </Card>
-
-          <Card className="p-6 shadow-soft">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Confirmadas</p>
-                <p className="mt-2 text-3xl font-bold text-accent">{stats.confirmedReservations}</p>
-              </div>
-              <CheckCircle2 className="h-8 w-8 text-accent/20" />
-            </div>
-          </Card>
-
-          <Card className="p-6 shadow-soft">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Pendientes de Pago</p>
-                <p className="mt-2 text-3xl font-bold text-destructive">{stats.pendingPayment}</p>
-              </div>
-              <AlertCircle className="h-8 w-8 text-destructive/20" />
-            </div>
-          </Card>
-
-          <Card className="p-6 shadow-soft">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Ingresos Totales</p>
-                <p className="mt-2 text-3xl font-bold text-foreground">
-                  {stats.totalRevenue.toFixed(2)}€
-                </p>
-              </div>
-              <DollarSign className="h-8 w-8 text-primary/20" />
-            </div>
-          </Card>
+        {/* KPI Cards */}
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+          <KpiCard
+            label="Total de Reservas"
+            value={stats.totalReservations}
+            color="blue"
+            icon={<Users className="h-6 w-6 text-white" />}
+            description="Todas las estancias registradas"
+            delay={0}
+          />
+          <KpiCard
+            label="Confirmadas"
+            value={stats.confirmedReservations}
+            color="green"
+            icon={<CheckCircle2 className="h-6 w-6 text-white" />}
+            description="Reservas activas y pagadas"
+            delay={50}
+          />
+          <KpiCard
+            label="Pendientes de Pago"
+            value={stats.pendingPayment}
+            color="red"
+            icon={<AlertCircle className="h-6 w-6 text-white" />}
+            description="Requieren atención inmediata"
+            delay={100}
+          />
+          <KpiCard
+            label="Ingresos Totales"
+            value={stats.totalRevenue}
+            suffix="€"
+            color="purple"
+            icon={<DollarSign className="h-6 w-6 text-white" />}
+            description="Facturación acumulada"
+            delay={150}
+          />
         </div>
 
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6">
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="parser">Parser de Email</TabsTrigger>
-            <TabsTrigger value="planning">Planning Visual</TabsTrigger>
-            <TabsTrigger value="sheets">Sincronización Sheets</TabsTrigger>
-          </TabsList>
-
+        {/* Tab Content */}
+        <div className="animate-fade-in">
           {/* Dashboard Tab */}
-          <TabsContent value="dashboard" className="space-y-6">
-            {/* Visual Charts Section */}
-            {chartData.length > 0 && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                {/* Revenue per room Chart */}
-                <Card className="p-6 shadow-soft">
-                  <h3 className="text-base font-semibold text-foreground mb-4 flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4 text-primary" />
-                    Ingresos Generados por Habitación
-                  </h3>
-                  <div className="h-[280px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                        <defs>
-                          <linearGradient id="colorIngresos" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#2563EB" stopOpacity={0.3}/>
-                            <stop offset="95%" stopColor="#2563EB" stopOpacity={0}/>
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                        <XAxis dataKey="room" stroke="#6B7280" fontSize={12} tickLine={false} />
-                        <YAxis stroke="#6B7280" fontSize={12} tickLine={false} />
-                        <Tooltip 
-                          contentStyle={{ backgroundColor: '#fff', border: '1px solid #E5E7EB', borderRadius: '8px' }}
-                          formatter={(value: any) => [`${parseFloat(value).toFixed(2)} €`, 'Ingresos']}
-                        />
-                        <Area type="monotone" dataKey="Ingresos" stroke="#2563EB" strokeWidth={2.5} fillOpacity={1} fill="url(#colorIngresos)" />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                </Card>
+          {activeTab === 'dashboard' && (
+            <div className="space-y-6">
+              {/* Charts */}
+              {chartData.length > 0 && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Revenue Chart */}
+                  <Card className="p-6 shadow-soft bg-card border-border transition-colors">
+                    <h3 className="text-base font-semibold text-foreground mb-1 flex items-center gap-2">
+                      <div className="bg-primary/10 rounded-lg p-1.5">
+                        <TrendingUp className="h-4 w-4 text-primary" />
+                      </div>
+                      Ingresos por Habitación
+                    </h3>
+                    <p className="text-xs text-muted-foreground mb-5">Desglose de facturación por unidad</p>
+                    <div className="h-[260px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                          <defs>
+                            <linearGradient id="colorIngresos" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#2563EB" stopOpacity={0.35}/>
+                              <stop offset="95%" stopColor="#2563EB" stopOpacity={0}/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? 'rgba(255,255,255,0.06)' : '#E2E8F0'} />
+                          <XAxis dataKey="room" stroke={isDark ? '#64748B' : '#94A3B8'} fontSize={12} tickLine={false} axisLine={false} />
+                          <YAxis stroke={isDark ? '#64748B' : '#94A3B8'} fontSize={12} tickLine={false} axisLine={false} />
+                          <Tooltip 
+                            contentStyle={{ 
+                              backgroundColor: isDark ? '#0F1629' : '#fff', 
+                              border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0'}`,
+                              borderRadius: '12px',
+                              boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+                              color: isDark ? '#E2E8F0' : '#0F172A'
+                            }}
+                            formatter={(value: any) => [`${parseFloat(value).toFixed(2)} €`, 'Ingresos']}
+                          />
+                          <Area type="monotone" dataKey="Ingresos" stroke="#2563EB" strokeWidth={2.5} fillOpacity={1} fill="url(#colorIngresos)" dot={{ fill: '#2563EB', r: 4, strokeWidth: 2, stroke: '#fff' }} />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </Card>
 
-                {/* Nights per room Chart */}
-                <Card className="p-6 shadow-soft">
-                  <h3 className="text-base font-semibold text-foreground mb-4 flex items-center gap-2">
-                    <Percent className="h-4 w-4 text-accent" />
-                    Noches Reservadas por Habitación
-                  </h3>
-                  <div className="h-[280px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                        <XAxis dataKey="room" stroke="#6B7280" fontSize={12} tickLine={false} />
-                        <YAxis stroke="#6B7280" fontSize={12} tickLine={false} />
-                        <Tooltip 
-                          contentStyle={{ backgroundColor: '#fff', border: '1px solid #E5E7EB', borderRadius: '8px' }}
-                          formatter={(value: any) => [`${value} noches`, 'Reservado']}
-                        />
-                        <Bar dataKey="Noches" fill="#10B981" radius={[4, 4, 0, 0]} barSize={36} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </Card>
-              </div>
-            )}
+                  {/* Nights Chart */}
+                  <Card className="p-6 shadow-soft bg-card border-border transition-colors">
+                    <h3 className="text-base font-semibold text-foreground mb-1 flex items-center gap-2">
+                      <div className="bg-accent/10 rounded-lg p-1.5">
+                        <Activity className="h-4 w-4 text-accent" />
+                      </div>
+                      Noches Reservadas
+                    </h3>
+                    <p className="text-xs text-muted-foreground mb-5">Ocupación por habitación</p>
+                    <div className="h-[260px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                          <defs>
+                            <linearGradient id="colorNoches" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#059669" stopOpacity={1}/>
+                              <stop offset="95%" stopColor="#047857" stopOpacity={0.8}/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? 'rgba(255,255,255,0.06)' : '#E2E8F0'} />
+                          <XAxis dataKey="room" stroke={isDark ? '#64748B' : '#94A3B8'} fontSize={12} tickLine={false} axisLine={false} />
+                          <YAxis stroke={isDark ? '#64748B' : '#94A3B8'} fontSize={12} tickLine={false} axisLine={false} />
+                          <Tooltip 
+                            contentStyle={{ 
+                              backgroundColor: isDark ? '#0F1629' : '#fff', 
+                              border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0'}`,
+                              borderRadius: '12px',
+                              boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+                              color: isDark ? '#E2E8F0' : '#0F172A'
+                            }}
+                            formatter={(value: any) => [`${value} noches`, 'Ocupación']}
+                          />
+                          <Bar dataKey="Noches" fill="url(#colorNoches)" radius={[6, 6, 0, 0]} barSize={40} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </Card>
+                </div>
+              )}
 
-            <Card className="p-6 shadow-soft">
-              <h2 className="text-xl font-semibold text-foreground mb-4">Listado de Reservas</h2>
-              <ReservationsList
-                reservations={reservations}
-                onDeleteReservation={handleDeleteReservation}
-                onUpdateReservation={handleUpdateReservation}
-              />
-            </Card>
-          </TabsContent>
+              {/* Reservations Table */}
+              <Card className="p-6 shadow-soft bg-card border-border transition-colors">
+                <div className="flex items-center justify-between mb-5">
+                  <div>
+                    <h2 className="text-lg font-bold text-foreground">Listado de Reservas</h2>
+                    <p className="text-xs text-muted-foreground mt-0.5">Gestiona y edita las reservas en tiempo real</p>
+                  </div>
+                  <div className="bg-primary/10 text-primary text-sm font-semibold px-3 py-1 rounded-full">
+                    {reservations.length} reservas
+                  </div>
+                </div>
+                <ReservationsList
+                  reservations={reservations}
+                  onDeleteReservation={handleDeleteReservation}
+                  onUpdateReservation={handleUpdateReservation}
+                />
+              </Card>
+            </div>
+          )}
 
           {/* Parser Tab */}
-          <TabsContent value="parser" className="space-y-6">
+          {activeTab === 'parser' && (
             <ParserView onAddReservation={handleAddReservation} />
-          </TabsContent>
+          )}
 
           {/* Planning Tab */}
-          <TabsContent value="planning" className="space-y-6">
+          {activeTab === 'planning' && (
             <OccupancyPlanning reservations={reservations} />
-          </TabsContent>
+          )}
 
           {/* Sheets Tab */}
-          <TabsContent value="sheets" className="space-y-6">
+          {activeTab === 'sheets' && (
             <GoogleSheetsSync reservations={reservations} />
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
       </main>
 
-      {/* Manual Reservation Dialog */}
+      {/* ===== MANUAL RESERVATION DIALOG ===== */}
       <Dialog open={isManualOpen} onOpenChange={setIsManualOpen}>
-        <DialogContent className="max-w-md bg-white rounded-xl shadow-lg border border-border p-6">
+        <DialogContent className="max-w-md bg-card rounded-2xl shadow-2xl border border-border p-6">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-foreground">Crear Reserva Manual</DialogTitle>
+            <div className="flex items-center gap-3 mb-1">
+              <div className="bg-primary/10 rounded-xl p-2">
+                <Plus className="h-5 w-5 text-primary" />
+              </div>
+              <DialogTitle className="text-lg font-bold text-foreground">Crear Reserva Manual</DialogTitle>
+            </div>
             <DialogDescription className="text-sm text-muted-foreground">
               Introduce los datos del huésped para registrar la reserva directamente.
             </DialogDescription>
@@ -382,7 +546,7 @@ export default function Home() {
 
           <div className="space-y-4 py-4">
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-muted-foreground uppercase">Huésped *</label>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Huésped *</label>
               <Input
                 placeholder="Nombre completo"
                 value={newGuestName}
@@ -392,7 +556,7 @@ export default function Home() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground uppercase">Habitación *</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Habitación *</label>
                 <Input
                   placeholder="Ej: 101"
                   value={newRoomNumber}
@@ -400,7 +564,7 @@ export default function Home() {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground uppercase">Tipo Habitación</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Tipo</label>
                 <Input
                   placeholder="Ej: Doble Estándar"
                   value={newRoomType}
@@ -411,7 +575,7 @@ export default function Home() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground uppercase">Fecha Entrada *</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Entrada *</label>
                 <Input
                   placeholder="DD/MM/YYYY"
                   value={newCheckIn}
@@ -419,7 +583,7 @@ export default function Home() {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground uppercase">Fecha Salida *</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Salida *</label>
                 <Input
                   placeholder="DD/MM/YYYY"
                   value={newCheckOut}
@@ -430,7 +594,7 @@ export default function Home() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground uppercase">Precio Total *</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Precio Total *</label>
                 <Input
                   placeholder="Ej: 240,00 €"
                   value={newTotalPrice}
@@ -438,23 +602,23 @@ export default function Home() {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground uppercase">Estado del Pago</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Estado</label>
                 <Select value={newStatus} onValueChange={(val: any) => setNewStatus(val)}>
                   <SelectTrigger className="w-full bg-background">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="confirmed">Confirmado</SelectItem>
-                    <SelectItem value="virtual">Virtual</SelectItem>
-                    <SelectItem value="unpaid">Sin Pagar</SelectItem>
+                    <SelectItem value="confirmed">✅ Confirmado</SelectItem>
+                    <SelectItem value="virtual">🟡 Virtual</SelectItem>
+                    <SelectItem value="unpaid">🔴 Sin Pagar</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-muted-foreground uppercase block">Extras Incluidos</label>
-              <div className="flex flex-wrap gap-4 pt-1">
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block">Extras Incluidos</label>
+              <div className="flex flex-wrap gap-4 pt-1 bg-secondary/30 rounded-xl p-3">
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="new-breakfast"
@@ -462,7 +626,7 @@ export default function Home() {
                     onCheckedChange={(checked) => setNewBreakfast(!!checked)}
                   />
                   <label htmlFor="new-breakfast" className="text-xs font-medium text-foreground cursor-pointer">
-                    Desayuno (D)
+                    ☕ Desayuno
                   </label>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -472,7 +636,7 @@ export default function Home() {
                     onCheckedChange={(checked) => setNewParking(!!checked)}
                   />
                   <label htmlFor="new-parking" className="text-xs font-medium text-foreground cursor-pointer">
-                    Parking (P)
+                    🚗 Parking
                   </label>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -482,19 +646,19 @@ export default function Home() {
                     onCheckedChange={(checked) => setNewTriple(!!checked)}
                   />
                   <label htmlFor="new-triple" className="text-xs font-medium text-foreground cursor-pointer">
-                    Habitación Triple (S)
+                    🛏 Triple
                   </label>
                 </div>
               </div>
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-muted-foreground uppercase font-sans">Notas / Peticiones Especiales</label>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide font-sans">Notas especiales</label>
               <Textarea
-                placeholder="Notas adicionales..."
+                placeholder="Peticiones especiales del huésped..."
                 value={newNotes}
                 onChange={(e) => setNewNotes(e.target.value)}
-                className="min-h-16"
+                className="min-h-16 bg-background"
               />
             </div>
           </div>
@@ -503,7 +667,8 @@ export default function Home() {
             <Button variant="outline" onClick={() => setIsManualOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleSaveManual} className="bg-primary hover:bg-primary/90 text-white font-medium">
+            <Button onClick={handleSaveManual} className="bg-primary hover:bg-primary/90 text-white font-semibold gap-2">
+              <Zap className="h-4 w-4" />
               Registrar Reserva
             </Button>
           </DialogFooter>
