@@ -61,6 +61,7 @@ import {
 } from 'recharts';
 import { toast } from 'sonner';
 import { useTheme } from '@/contexts/ThemeContext';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Animated counter hook
 function useCountUp(target: number, duration = 1200) {
@@ -409,7 +410,14 @@ export default function Home() {
         </div>
 
         {/* Tab Content */}
-        <div className="animate-fade-in">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+          >
           {/* Dashboard Tab */}
           {activeTab === 'dashboard' && (
             <div className="space-y-6">
@@ -526,7 +534,8 @@ export default function Home() {
           {activeTab === 'sheets' && (
             <GoogleSheetsSync reservations={reservations} />
           )}
-        </div>
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* ===== MANUAL RESERVATION DIALOG ===== */}

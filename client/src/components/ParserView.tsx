@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { extractBookingData, validateBookingData, BookingData } from '@/lib/bookingParser';
-import { AlertCircle, CheckCircle2, Copy, Trash2, Mail } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Copy, Trash2, Mail, DownloadCloud } from 'lucide-react';
 import { toast } from 'sonner';
 
 const SAMPLE_EMAILS = {
@@ -67,6 +67,33 @@ export default function ParserView({ onAddReservation }: ParserViewProps) {
   const [extractedData, setExtractedData] = useState<BookingData | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  const [isFetchingEmails, setIsFetchingEmails] = useState(false);
+
+  const handleFetchEmails = async () => {
+    setIsFetchingEmails(true);
+    toast.info('Conectando al servidor de correo (IMAP)...');
+    try {
+      const response = await fetch('/api/emails/check');
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al revisar el correo');
+      }
+
+      if (data.emails && data.emails.length > 0) {
+        toast.success(`Se encontraron ${data.emails.length} correos recientes. Cargando el primero...`);
+        // Cargamos el primer correo en el área de texto
+        setEmailText(data.emails[0].text || data.emails[0].subject);
+      } else {
+        toast.info('No hay correos de reservas recientes en las últimas 24 horas.');
+      }
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setIsFetchingEmails(false);
+    }
+  };
 
   const handleParse = () => {
     if (!emailText.trim()) {
@@ -183,6 +210,18 @@ export default function ParserView({ onAddReservation }: ParserViewProps) {
               Juan Rodríguez (Triple)
             </Button>
           </div>
+        </div>
+
+        <div className="mb-4 flex justify-end">
+          <Button
+            onClick={handleFetchEmails}
+            disabled={isFetchingEmails}
+            variant="default"
+            className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+          >
+            <DownloadCloud className="h-4 w-4" />
+            {isFetchingEmails ? 'Revisando bandeja de entrada...' : 'Leer desde Correo Automático (IMAP)'}
+          </Button>
         </div>
 
         <div className="space-y-4">

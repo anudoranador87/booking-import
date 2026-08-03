@@ -149,6 +149,43 @@ export default function OccupancyPlanning({ reservations, onUpdateReservation }:
     }
   };
 
+  // Drag and Drop Handlers
+  const handleDragStart = (e: React.DragEvent, res: Reservation) => {
+    e.dataTransfer.setData('application/json', JSON.stringify(res));
+    e.dataTransfer.effectAllowed = 'move';
+    // Se puede añadir un estilo sutil mientras se arrastra si se desea
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault(); // Necesario para permitir el "drop"
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, targetRoomNumber: string, targetDate: Date) => {
+    e.preventDefault();
+    const data = e.dataTransfer.getData('application/json');
+    if (!data) return;
+    
+    try {
+      const draggedRes = JSON.parse(data) as Reservation;
+      
+      // Si la soltamos en la misma habitación, no hacemos nada
+      if (draggedRes.roomNumber === targetRoomNumber) return;
+
+      // Verificamos de manera simple si hay colisión (opcional, pero buena práctica)
+      // En este caso, simplemente reasignamos la habitación y mantenemos las fechas
+      if (onUpdateReservation) {
+        onUpdateReservation({
+          ...draggedRes,
+          roomNumber: targetRoomNumber,
+        });
+        toast.success(`Reserva movida a la Habitación ${targetRoomNumber}`);
+      }
+    } catch (err) {
+      console.error('Error parsing dragged reservation data', err);
+    }
+  };
+
   return (
     <Card className="p-6 shadow-soft space-y-6">
       {/* Header Controls */}
@@ -261,6 +298,8 @@ export default function OccupancyPlanning({ reservations, onUpdateReservation }:
                     <td
                       key={idx}
                       onClick={() => reservation && handleCellClick(reservation)}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, roomNumber, date)}
                       className={`px-2 py-2 border border-border min-w-28 transition-colors ${
                         reservation
                           ? `${getStatusColor(reservation.status)} cursor-pointer`
@@ -268,7 +307,11 @@ export default function OccupancyPlanning({ reservations, onUpdateReservation }:
                       }`}
                     >
                       {reservation ? (
-                        <div className="space-y-1 select-none">
+                        <div 
+                          className="space-y-1 select-none w-full h-full"
+                          draggable={true}
+                          onDragStart={(e) => handleDragStart(e, reservation)}
+                        >
                           <div className="font-semibold text-foreground text-xs leading-tight truncate">
                             {reservation.guestName.split(' ')[0]} {reservation.guestName.split(' ')[1] || ''}
                           </div>

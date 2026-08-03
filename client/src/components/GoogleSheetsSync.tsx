@@ -76,7 +76,7 @@ export default function GoogleSheetsSync({ reservations }: GoogleSheetsSyncProps
     toast.info('Se ha desconectado de Google Sheets');
   };
 
-  const handleSync = () => {
+  const handleSync = async () => {
     if (!isConnected) {
       toast.error('Debes conectar tu cuenta de Google Sheets primero.');
       return;
@@ -88,43 +88,51 @@ export default function GoogleSheetsSync({ reservations }: GoogleSheetsSyncProps
     }
 
     setIsSyncing(true);
-    setSyncProgress(0);
-    setSyncStep('Conectando con Google Sheets API...');
+    setSyncProgress(25);
+    setSyncStep('Enviando datos a Google Sheets API...');
 
-    // Simulate progress steps
-    const steps = [
-      { progress: 25, step: 'Conectando con Google Sheets API...' },
-      { progress: 50, step: 'Verificando columnas (A: Huésped, B: ID, C: Habitación, D: Check-In, E: Check-Out, F: Extras, G: Precio)...' },
-      { progress: 80, step: `Exportando ${reservations.length} filas de reservas...` },
-      { progress: 100, step: '¡Sincronización finalizada con éxito!' }
-    ];
+    try {
+      const response = await fetch('/api/sheets/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reservations,
+          spreadsheetId,
+          sheetName
+        })
+      });
 
-    steps.forEach((s, idx) => {
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error desconocido al sincronizar');
+      }
+
+      setSyncProgress(100);
+      setSyncStep('¡Sincronización finalizada con éxito!');
+
       setTimeout(() => {
-        setSyncProgress(s.progress);
-        setSyncStep(s.step);
+        setIsSyncing(false);
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('es-ES') + ' ' + now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+        
+        setLogs(prev => [
+          {
+            id: 'log-' + Date.now(),
+            timestamp: dateStr,
+            recordCount: reservations.length,
+            status: 'success',
+            spreadsheetId: spreadsheetId,
+          },
+          ...prev
+        ]);
+        toast.success(`Se han sincronizado ${reservations.length} reservas en la hoja de cálculo.`);
+      }, 1000);
 
-        if (idx === steps.length - 1) {
-          setTimeout(() => {
-            setIsSyncing(false);
-            const now = new Date();
-            const dateStr = now.toLocaleDateString('es-ES') + ' ' + now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-            
-            setLogs(prev => [
-              {
-                id: 'log-' + Date.now(),
-                timestamp: dateStr,
-                recordCount: reservations.length,
-                status: 'success',
-                spreadsheetId: spreadsheetId,
-              },
-              ...prev
-            ]);
-            toast.success(`Se han sincronizado ${reservations.length} reservas en la hoja de cálculo.`);
-          }, 800);
-        }
-      }, (idx + 1) * 1000);
-    });
+    } catch (error: any) {
+      toast.error(error.message);
+      setIsSyncing(false);
+    }
   };
 
   return (
