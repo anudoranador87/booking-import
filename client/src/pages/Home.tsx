@@ -42,6 +42,8 @@ import {
   Activity,
   ArrowUpRight,
   Zap,
+  Globe,
+  BellRing
 } from 'lucide-react';
 import ParserView from '@/components/ParserView';
 import ReservationsList from '@/components/ReservationsList';
@@ -61,6 +63,7 @@ import {
 } from 'recharts';
 import { toast } from 'sonner';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Animated counter hook
@@ -139,6 +142,7 @@ function KpiCard({ label, value, suffix = '', prefix = '', color, icon, descript
 
 export default function Home() {
   const { theme, toggleTheme } = useTheme();
+  const { t, language, setLanguage } = useLanguage();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [reservations, setReservations] = useState<any[]>([
     {
@@ -245,7 +249,7 @@ export default function Home() {
 
   const handleAddReservation = (newReservation: any) => {
     setReservations((prev) => [newReservation, ...prev]);
-    toast.success('Reserva añadida correctamente');
+    toast.success(t('toast.added'));
   };
 
   const handleDeleteReservation = (id: string) => {
@@ -258,7 +262,7 @@ export default function Home() {
 
   const handleSaveManual = () => {
     if (!newGuestName.trim() || !newRoomNumber.trim() || !newCheckIn.trim() || !newCheckOut.trim()) {
-      toast.error('Por favor, rellena todos los campos obligatorios');
+      toast.error(t('toast.fillFields'));
       return;
     }
 
@@ -297,11 +301,38 @@ export default function Home() {
 
   const isDark = theme === 'dark';
 
+  const simulateIncomingBooking = () => {
+    const randomId = Math.floor(1000000000 + Math.random() * 9000000000).toString();
+    const mockGuest = ["John Doe", "Emma Smith", "Lucas Silva", "Marie Dubois"][Math.floor(Math.random() * 4)];
+    const mockRoom = ["104", "205", "301", "110"][Math.floor(Math.random() * 4)];
+    
+    toast.success(t('toast.newIncoming'), {
+      description: `${mockGuest} - Hab. ${mockRoom}`,
+      icon: <BellRing className="h-4 w-4 text-primary" />,
+      duration: 5000,
+    });
+    
+    handleAddReservation({
+      id: randomId,
+      guestName: mockGuest,
+      roomNumber: mockRoom,
+      roomType: 'Doble Estándar',
+      checkIn: '19/06/2026',
+      checkOut: '22/06/2026',
+      totalPrice: '300,00 €',
+      status: 'confirmed',
+      breakfast: true,
+      parking: false,
+      triple: false,
+      notes: 'Llegada automática (simulada)',
+    });
+  };
+
   const tabConfig = [
-    { value: 'dashboard', label: 'Dashboard', icon: <BarChart3 className="h-4 w-4" /> },
-    { value: 'parser', label: 'Parser Email', icon: <Mail className="h-4 w-4" /> },
-    { value: 'planning', label: 'Planning Visual', icon: <BedDouble className="h-4 w-4" /> },
-    { value: 'sheets', label: 'Google Sheets', icon: <FileSpreadsheet className="h-4 w-4" /> },
+    { value: 'dashboard', label: t('nav.dashboard'), icon: <BarChart3 className="h-4 w-4" /> },
+    { value: 'parser', label: t('nav.parser'), icon: <Mail className="h-4 w-4" /> },
+    { value: 'planning', label: t('nav.planning'), icon: <BedDouble className="h-4 w-4" /> },
+    { value: 'sheets', label: t('nav.sheets'), icon: <FileSpreadsheet className="h-4 w-4" /> },
   ];
 
   return (
@@ -320,7 +351,7 @@ export default function Home() {
                   Booking Import
                 </h1>
                 <p className="text-white/60 text-xs font-medium tracking-wide">
-                  Hotel Management · Powered by AI
+                  {t('app.subtitle')}
                 </p>
               </div>
             </div>
@@ -339,13 +370,32 @@ export default function Home() {
                 <Moon className="h-4 w-4 text-white/70" />
               </div>
 
+              {/* Language toggle */}
+              <button
+                onClick={() => setLanguage(language === 'es' ? 'en' : 'es')}
+                className="flex items-center justify-center h-10 px-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl hover:bg-white/20 transition-colors"
+                title="Toggle Language"
+              >
+                <Globe className="h-4 w-4 text-white/70" />
+                <span className="text-white/70 text-xs font-bold ml-1">{language.toUpperCase()}</span>
+              </button>
+
+              {/* Simulate Notification button */}
+              <button
+                onClick={simulateIncomingBooking}
+                className="flex items-center justify-center h-10 w-10 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl hover:bg-white/20 transition-colors"
+                title="Simular Nueva Reserva"
+              >
+                <BellRing className="h-4 w-4 text-white/70" />
+              </button>
+
               {/* Nueva Reserva button */}
               <Button
                 onClick={() => setIsManualOpen(true)}
                 className="bg-white text-primary hover:bg-white/90 font-semibold shadow-lg border-none gap-2"
               >
                 <Plus className="h-4 w-4" />
-                Nueva Reserva
+                {t('btn.newBooking')}
               </Button>
             </div>
           </div>
@@ -375,36 +425,36 @@ export default function Home() {
         {/* KPI Cards */}
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
           <KpiCard
-            label="Total de Reservas"
+            label={t('kpi.totalBookings')}
             value={stats.totalReservations}
             color="blue"
             icon={<Users className="h-6 w-6 text-white" />}
-            description="Todas las estancias registradas"
+            description={t('kpi.totalBookingsDesc')}
             delay={0}
           />
           <KpiCard
-            label="Confirmadas"
+            label={t('kpi.confirmed')}
             value={stats.confirmedReservations}
             color="green"
             icon={<CheckCircle2 className="h-6 w-6 text-white" />}
-            description="Reservas activas y pagadas"
+            description={t('kpi.confirmedDesc')}
             delay={50}
           />
           <KpiCard
-            label="Pendientes de Pago"
+            label={t('kpi.pending')}
             value={stats.pendingPayment}
             color="red"
             icon={<AlertCircle className="h-6 w-6 text-white" />}
-            description="Requieren atención inmediata"
+            description={t('kpi.pendingDesc')}
             delay={100}
           />
           <KpiCard
-            label="Ingresos Totales"
+            label={t('kpi.revenue')}
             value={stats.totalRevenue}
             suffix="€"
             color="purple"
             icon={<DollarSign className="h-6 w-6 text-white" />}
-            description="Facturación acumulada"
+            description={t('kpi.revenueDesc')}
             delay={150}
           />
         </div>
@@ -430,9 +480,9 @@ export default function Home() {
                       <div className="bg-primary/10 rounded-lg p-1.5">
                         <TrendingUp className="h-4 w-4 text-primary" />
                       </div>
-                      Ingresos por Habitación
+                      {t('chart.revenue')}
                     </h3>
-                    <p className="text-xs text-muted-foreground mb-5">Desglose de facturación por unidad</p>
+                    <p className="text-xs text-muted-foreground mb-5">{t('chart.revenueDesc')}</p>
                     <div className="h-[260px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -467,9 +517,9 @@ export default function Home() {
                       <div className="bg-accent/10 rounded-lg p-1.5">
                         <Activity className="h-4 w-4 text-accent" />
                       </div>
-                      Noches Reservadas
+                      {t('chart.nights')}
                     </h3>
-                    <p className="text-xs text-muted-foreground mb-5">Ocupación por habitación</p>
+                    <p className="text-xs text-muted-foreground mb-5">{t('chart.nightsDesc')}</p>
                     <div className="h-[260px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -504,11 +554,11 @@ export default function Home() {
               <Card className="p-6 shadow-soft bg-card border-border transition-colors">
                 <div className="flex items-center justify-between mb-5">
                   <div>
-                    <h2 className="text-lg font-bold text-foreground">Listado de Reservas</h2>
-                    <p className="text-xs text-muted-foreground mt-0.5">Gestiona y edita las reservas en tiempo real</p>
+                    <h2 className="text-lg font-bold text-foreground">{t('list.title')}</h2>
+                    <p className="text-xs text-muted-foreground mt-0.5">{t('list.desc')}</p>
                   </div>
                   <div className="bg-primary/10 text-primary text-sm font-semibold px-3 py-1 rounded-full">
-                    {reservations.length} reservas
+                    {reservations.length} {t('list.count')}
                   </div>
                 </div>
                 <ReservationsList
